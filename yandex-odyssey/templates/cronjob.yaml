@@ -1,0 +1,44 @@
+{{ if .Values.yandex_odyssey.cronjob_enable }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "yandex-odyssey.name" . }}-restart
+  labels:
+    {{- include "yandex-odyssey.labels" . | nindent 4 }}
+spec:
+  concurrencyPolicy: Forbid
+  schedule: '42 06 * * *' # cron spec of time, here, 00:10 o'clock
+  jobTemplate:
+    spec:
+      backoffLimit: 6 # this has very low chance of failing, as all this does
+                      # is prompt kubernetes to schedule new replica set for
+                      # the deployment
+      activeDeadlineSeconds: 600 # timeout, makes most sense with 
+                                 # "waiting for rollout" variant specified below
+      template:
+        spec:
+          serviceAccountName: {{ .Values.yandex_odyssey.serviceAccount.name }}
+                                                 # account configured above
+          restartPolicy: Never
+          containers:
+            - name: kubectl
+              image: {{ .Values.common.registry }}/{{ .Values.yandex_odyssey.cronjob_image }}:{{ .Values.yandex_odyssey.cronjob_imageTag }} # probably any kubectl image will do,
+                                     # optionaly specify version, but this
+                                     # should not be necessary, as long the
+                                     # version of kubectl is new enough to
+                                     # have `rollout restart`
+              command:
+                - 'kubectl'
+                - 'rollout'
+                - 'restart'
+                - 'deployment/{{ include "yandex-odyssey.fullname" . }}'
+              resources:
+                limits:
+                  cpu: "100m"
+                  memory: "128Mi"
+                requests:
+                  cpu: "50m"
+                  memory: "64Mi"
+          imagePullSecrets:
+            - name: {{ .Values.common.imagePullSecrets }}
+{{ end }}

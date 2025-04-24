@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "5-drop-test-databses-and-users-on-postgresql-hosts"
+  labels:
+    {{- include "yandex-odyssey.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "6"
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+        - name: "drop-databases-and-users-on-postgresql"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "50m"
+          env:
+          - name: PGUSERNAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "yandex-odyssey.name" . }}
+                key: ODYSSEY_AUTH_USER
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "yandex-odyssey.name" . }}
+                key: ODYSSEY_AUTH_PASSWORD
+          command: 
+          - 'bash'
+          - '-c'
+          - 'psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST1 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT1 }} --command="DROP DATABASE IF EXISTS \"test__1-test\";" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST2 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT2 }} --command="DROP DATABASE IF EXISTS \"test__2-test\";" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST3 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT3 }} --command="DROP DATABASE IF EXISTS \"test__3-test\";" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST1 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT1 }} --command="DROP USER IF EXISTS \"test__1-test\";" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST2}} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT2 }} --command="DROP USER IF EXISTS \"test__2-test\";" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST3 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT3 }} --command="DROP USER IF EXISTS \"test__3-test\";"'
+          image: {{ include "yandex-odyssey.image" . }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: {{ .Values.common.imagePullSecrets }}

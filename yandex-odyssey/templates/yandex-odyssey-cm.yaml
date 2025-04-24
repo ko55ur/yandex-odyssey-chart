@@ -1,0 +1,108 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: yandex-odyssey-cm
+immutable: false
+data:
+  odyssey.conf: |
+    daemonize no
+    unix_socket_dir "/tmp"
+    unix_socket_mode "0644"
+    log_format "%p %t %l [%i %s] (%c) %m\n"
+    log_to_stdout yes
+    log_syslog no
+    log_debug no
+    log_config no
+    log_session yes
+    log_query no
+    log_stats yes
+    workers 1
+    resolvers 1
+    readahead 8192
+    cache_coroutine 0
+    coroutine_stack_size 128
+    nodelay yes
+    keepalive 10
+    #include "/home/appuser/odyssey/add.conf"
+    listen {
+      host "*"
+      port 5432
+      backlog 128
+      tls "disable"
+      tls_cert_file "/home/appuser/certs/odyssey.crt"
+      tls_key_file "/home/appuser/certs/odyssey.key"
+    }
+    storage "psql01" {
+      type "remote"
+      host "pg-service-1"
+      port 5432
+      tls "disable"
+      tls_ca_file "/home/appuser/certs/postgres1-ca.crt"
+    }
+    storage "psql02" {
+      type "remote"
+      host "pg-service-2"
+      port 5432
+      tls "disable"
+      tls_ca_file "/home/appuser/certs/postgres2-ca.crt"
+    }
+    storage "psql03" {
+      type "remote"
+      host "pg-service-3"
+      port 5432
+      tls "disable"
+      tls_ca_file "/home/appuser/certs/postgres3-ca.crt"
+    }
+    storage "local" {
+      type "local"
+    }
+    database default {
+      user default {
+      authentication "md5"
+      password_passthrough yes
+      auth_query "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
+      auth_query_db "auth"
+      auth_query_user "auth"
+      storage "psql01"
+      pool "session"
+      pool_size 3000
+      pool_timeout 0
+      pool_ttl 5
+      pool_discard yes
+      pool_cancel yes
+      pool_rollback yes
+      client_fwd_error yes
+      }
+    }
+    database "auth" {
+      user "auth" {
+      authentication "none"
+      storage "psql01"
+      storage_db "postgres"
+      storage_user "testadmin"
+      storage_password "testadmin"
+      pool "transaction"
+      pool_routing "internal"
+      pool_size 0
+      pool_timeout 0
+      pool_ttl 5
+      pool_discard no
+      pool_cancel no
+      pool_rollback no
+      }
+    }
+    database "console" {
+    user default {
+    authentication "none"
+    pool "session"
+    storage "local"
+    }
+    }
+    database "console" {
+    user "monitor" {
+    authentication "md5"
+    password "monitor"
+    pool "session"
+    storage "local"
+    }
+    }

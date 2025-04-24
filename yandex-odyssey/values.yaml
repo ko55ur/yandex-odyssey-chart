@@ -1,0 +1,90 @@
+common:
+  imagePullSecrets: "registry-pull-secret"
+  registry: "docker.io"
+
+yandex_odyssey:
+  image: library/yandex-odyssey
+  imageTag: 0.0.10-rc.32
+
+  cronjob_enable: false
+  cronjob_image: bitnami/kubectl
+  cronjob_imageTag: 1.26
+  secrets: {}
+  securityContext:
+    
+
+  rbac:
+    nonroot:
+      create: false
+    restart:
+      create: true
+
+  serviceAccount:
+    create: false
+    name:
+  podAnnotations: {}
+
+  service:
+    type: ClusterIP
+    port: 5432
+    targetPort: 5432
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  env:
+    POSTGRES_HOST1: pg-service-1
+    POSTGRES_PORT1: 5432
+    ODYSSEY_POOL_TYPE: session
+    POSTGRES_POOL_TYPE_TRANSACTION: test_[a-z0-9]*__[a-z]* test_[a-z0-9]*__[a-z]* test_[a-z0-9]*__[a-z]*
+    ODYSSEY_POOL_SIZE: 3000
+    ODYSSEY_DEBUG: false
+    ODYSSEY_LOG: true
+    ODYSSEY_POOL_TTL: 5
+    ODYSSEY_CACHE_COROUTINE: 0
+    ODYSSEY_HOST_AUTH_METHOD: md5
+    ODYSSEY_MONITORING_PASSWORD: monitor
+    ODYSSEY_MONITORING_USER: monitor
+    ODYSSEY_CLIENT_IDLE_TIMEOUT: 5
+    ODYSSEY_IDLE_IN_TRANSACTION_TIMEOUT: 10
+
+  tls:
+    odyssey:
+      mode: disable
+    postgres1:
+      mode: disable
+      secret_name: postgres-ca.crt
+    postgres2:
+      mode: disable
+      secret_name: postgres-ca.crt
+    postgres3:
+      mode: disable
+      secret_name: postgres-ca.crt
+yandex_odyssey_exporter:
+  enabled: true
+  image: library/yandex-odyssey-exporter
+  imageTag: 0.0.1-rc.3
+
+  host: 127.0.0.1
+  port: 9127
+
+  service:
+    port: 9127
+    targetPort: 9127
+
+  resources:
+    limits:
+      cpu: 250m
+      memory: 150Mi
+    requests:
+      cpu: 30m
+      memory: 40Mi
+
+  connection:
+    dbname: console
+    sslmode: sslmode=disable

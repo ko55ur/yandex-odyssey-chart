@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "0-testing-connection-to-the-{{ include "yandex-odyssey.name" . }}"
+  labels:
+    {{- include "yandex-odyssey.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "1"
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+        - name: test-yandex-odyssey-pod-connection
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "50m"
+          command: 
+          - 'bash'
+          - '-c'
+          - 'pg_isready --host="{{ include "yandex-odyssey.name" . }}" --port="{{ .Values.yandex_odyssey.service.port }}"'
+          image: {{ include "yandex-odyssey.image" . }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: {{ .Values.common.imagePullSecrets }}

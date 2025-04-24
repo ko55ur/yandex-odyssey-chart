@@ -1,0 +1,47 @@
+common:
+  imagePullSecrets: "registry-pull-secret"
+  registry: "repo.ru"
+  
+yandex_odyssey:
+  image: infra/yandex-odyssey
+  imageTag: 1.3.2
+
+  cronjob_enable: true
+  cronjob_image: bitnami/kubectl
+  cronjob_imageTag: 1.26
+
+  securityContext: true
+    
+  rbac:
+    nonroot:
+      create: true
+    restart:
+      create: true
+      
+  serviceAccount:
+    create: false
+    name: "deployer"
+  podAnnotations: {}
+
+  service:
+    type: ClusterIP
+    port: 5432
+    targetPort: 5432
+
+  resourcesLevel: "low" 
+
+  env:
+    POSTGRES_HOST1: pg-service-1
+    POSTGRES_HOST2: pg-service-2
+    POSTGRES_HOST3: pg-service-3
+    POSTGRES_PORT1: 5432
+    POSTGRES_PORT2: 5432
+    POSTGRES_PORT3: 5432
+    POSTGRES_HOST2_DB_LIST: test_\%__1\%
+    POSTGRES_HOST3_DB_LIST: test_\%__2\%
+    ODYSSEY_POOL_TYPE: session
+    ODYSSEY_POOL_SIZE: 3000
+    ODYSSEY_DEBUG: false
+    ODYSSEY_POOL_TTL: 5
+    ODYSSEY_CACHE_COROUTINE: 0
+    ODYSSEY_HOST_AUTH_METHOD: md5

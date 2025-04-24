@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "4-check-{{ include "yandex-odyssey.name" . }}-to-postgrsql-connections"
+  labels:
+    {{- include "yandex-odyssey.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "5"
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      containers:
+        - name: "test-conn-db"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "50m"
+          command:
+          - 'bash'
+          - '-c'
+          - 'sleep 40'
+          - 'PGPASSWORD=test__1-test psql --username=test__1-test --host={{ include "yandex-odyssey.name" . }} --port={{ .Values.yandex_odyssey.service.port }} --command="SELECT pg_size_pretty(pg_database_size(''test__1-test''));" &&
+            PGPASSWORD=test__2-test psql --username=test__2-test --host={{ include "yandex-odyssey.name" . }} --port={{ .Values.yandex_odyssey.service.port }} --command="SELECT pg_size_pretty(pg_database_size(''test__2-test''));" &&
+            PGPASSWORD=test__3-test psql --username=test__3-test --host={{ include "yandex-odyssey.name" . }} --port={{ .Values.yandex_odyssey.service.port }} --command="SELECT pg_size_pretty(pg_database_size(''test__3-test''));"'
+          image: {{ include "yandex-odyssey.image" . }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: {{ .Values.common.imagePullSecrets }}

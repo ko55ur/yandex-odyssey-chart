@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "2-create-test-users-and-databases-on-postgresql-hosts"
+  labels:
+    {{- include "yandex-odyssey.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "3"
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+        - name: "create-users-and-databases"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "50m"
+          env:
+          - name: PGUSERNAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "yandex-odyssey.fullname" . }}
+                key: ODYSSEY_AUTH_USER
+          - name: PGPASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "yandex-odyssey.fullname" . }}
+                key: ODYSSEY_AUTH_PASSWORD
+          command:
+          - 'bash'
+          - '-c'
+          - 'psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST1 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT1 }} --command="CREATE USER \"test__1-test\" WITH ENCRYPTED PASSWORD ''test__1-test'';" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST2 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT2 }} --command="CREATE USER \"test__2-test\" WITH ENCRYPTED PASSWORD ''test__2-test'';" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST3 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT3 }} --command="CREATE USER \"test__3-test\" WITH ENCRYPTED PASSWORD ''test__3-test'';" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST1 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT1 }} --command="CREATE DATABASE \"test__1-test\" OWNER \"test__1-test\";" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST2 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT2 }} --command="CREATE DATABASE \"test__2-test\" OWNER \"test__2-test\";" &&
+            psql --username=$(PGUSERNAME) --host={{ .Values.yandex_odyssey.env.POSTGRES_HOST3 }} --port={{ .Values.yandex_odyssey.env.POSTGRES_PORT3 }} --command="CREATE DATABASE \"test__3-test\" OWNER \"test__3-test\";"'
+          image: {{ include "yandex-odyssey.image" . }}
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: {{ .Values.common.imagePullSecrets }}

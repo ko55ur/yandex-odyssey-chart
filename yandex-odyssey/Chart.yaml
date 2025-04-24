@@ -1,0 +1,10 @@
+apiVersion: v2
+name: yandex-odyssey
+description: Advanced multi-threaded PostgreSQL connection pooler and request router.
+icon: https://svn.apache.org/repos/asf/nifi/site/trunk/images/niFi-logo-horizontal-scaled.png
+type: application
+version: 1.0.2
+appVersion: 1.3.3
+kubeVersion: '>= 1.20.0 || >= 1.20.0-0'
+annotations:
+  charts.openshift.io/name: "yandex-odyssey"

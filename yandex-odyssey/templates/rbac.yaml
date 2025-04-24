@@ -1,0 +1,44 @@
+{{ if .Values.yandex_odyssey.rbac.nonroot.create }}
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "yandex-odyssey.name" . }}-nonroot
+  labels:
+    {{- include "yandex-odyssey.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "yandex-odyssey.serviceAccount" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: 'system:openshift:scc:nonroot'
+{{ end }}
+---
+{{ if .Values.yandex_odyssey.rbac.restart.create }}
+# allow getting status and patching only the one deployment you want
+# to restart
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "yandex-odyssey.name" . }}-restart
+rules:
+  - apiGroups: ["apps", "extensions"]
+    resources: ["deployments"]
+    resourceNames: ["{{ include "yandex-odyssey.name" . }}"]
+    verbs: ["get", "patch", "list", "watch"] # "list" and "watch" are only needed
+    # if you want to use `rollout status`
+    # bind the role to the service account
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "yandex-odyssey.name" . }}-restart
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "yandex-odyssey.name" . }}-restart
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "yandex-odyssey.serviceAccount" . }}
+{{ end }}
